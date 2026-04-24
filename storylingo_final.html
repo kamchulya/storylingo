@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Storylingo</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0c1a;--surface:#1a1730;--surface2:#231f38;--accent:#c8a96e;--accent2:#e8c98e;--text:#f0ead8;--text2:#9e98b8;--correct:#4caf7d;--wrong:#e05c5c;--blue:#5ba8e5;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.screen{display:none;flex-direction:column;min-height:100vh}.screen.active{display:flex}
+
+/* ONBOARDING */
+#screen-onboard{background:radial-gradient(ellipse at 30% 20%,#2a1f4a 0%,#0e0c1a 60%);align-items:center;justify-content:center;text-align:center;padding:2rem 1.5rem;gap:1.5rem}
+.logo-mark{width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#c8a96e,#e8c98e);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:32px;color:#0e0c1a;margin:0 auto;box-shadow:0 0 40px #c8a96e44}
+.logo-title{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;background:linear-gradient(135deg,#c8a96e,#f0ead8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:15px;color:var(--text2);line-height:1.6}
+.char-select{display:flex;gap:12px;width:100%}
+.char-card{flex:1;background:var(--surface);border:1.5px solid #3a3555;border-radius:var(--radius);padding:1.2rem .8rem;cursor:pointer;transition:all .2s;text-align:center}
+.char-card:hover,.char-card.selected{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 20px #c8a96e22}
+.char-emoji{font-size:36px;margin-bottom:8px}
+.char-name{font-size:14px;font-weight:500;color:var(--text)}.char-desc{font-size:11px;color:var(--text2);margin-top:3px}
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#c8a96e,#e8c98e);color:#0e0c1a;border:none;border-radius:var(--radius);font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s,transform .1s}
+.btn-primary:active{transform:scale(.98);opacity:.9}
+
+/* LOADING */
+#screen-loading{background:var(--bg);align-items:center;justify-content:center;gap:16px}
+.ld-row{display:flex;gap:8px}
+.ld{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:ldot 1.2s infinite}
+.ld:nth-child(2){animation-delay:.2s}.ld:nth-child(3){animation-delay:.4s}
+@keyframes ldot{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+.ld-text{font-size:14px;color:var(--text2)}
+
+/* GAME */
+#screen-game{background:var(--bg)}
+.progress-row{display:flex;align-items:center;gap:10px;padding:10px 16px 8px;background:var(--surface);border-bottom:1px solid #2a2545;flex-shrink:0}
+.ep-label{font-size:11px;color:var(--text2);white-space:nowrap}
+.prog-track{flex:1;height:4px;background:#2a2545;border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .4s ease}
+.score-lbl{font-size:12px;font-weight:500;color:var(--accent);white-space:nowrap}
+
+/* Scene */
+.scene-area{position:relative;height:220px;overflow:hidden;flex-shrink:0}
+.scene-bg{position:absolute;inset:0;transition:opacity .6s ease}
+.bg-bedroom{background:linear-gradient(180deg,#0d0820 0%,#1a1040 50%,#251845 100%)}
+.bg-kitchen{background:linear-gradient(180deg,#1a4a7a 0%,#2a6aaa 40%,#c8d8e8 100%);opacity:0}
+.stars-wrap{position:absolute;inset:0;transition:opacity .6s}
+.star{position:absolute;width:2px;height:2px;background:white;border-radius:50%;animation:twinkle 3s infinite}
+@keyframes twinkle{0%,100%{opacity:.3}50%{opacity:1}}
+.moon-el{position:absolute;top:18px;right:40px;width:36px;height:36px;background:#fffde0;border-radius:50%;box-shadow:0 0 20px #fffde088;transition:opacity .6s}
+.sun-el{position:absolute;top:20px;right:40px;width:44px;height:44px;background:radial-gradient(circle,#FFE566,#FFB300);border-radius:50%;opacity:0;transition:opacity .6s;box-shadow:0 0 30px #FFB30066}
+.window-el{position:absolute;top:18px;right:28px;width:56px;height:64px;background:#0d1a2a;border:3px solid #6b5a3a;border-radius:4px;overflow:hidden;transition:background .8s}
+.window-el.day{background:#87ceeb}
+.win-h{position:absolute;top:50%;left:0;right:0;height:2px;background:#6b5a3a;transform:translateY(-50%)}
+.win-v{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#6b5a3a;transform:translateX(-50%)}
+.bed-group{position:absolute;bottom:0;left:16px;transition:opacity .6s}
+.bed-frame-el{width:150px;height:55px;background:#3a2810;border-radius:8px 8px 0 0;position:relative}
+.bed-mat{position:absolute;top:-14px;left:4px;right:4px;height:20px;background:#e8d5b0;border-radius:4px}
+.bed-pillow{position:absolute;top:-26px;left:10px;width:44px;height:20px;background:#fff8f0;border-radius:6px;border:1px solid #ddd0c0}
+.bed-blanket{position:absolute;top:-16px;left:0;right:0;height:28px;background:#4a3880;border-radius:4px;transform-origin:right center;transition:transform .8s ease,opacity .8s}
+.bed-blanket.off{transform:scaleX(.15);opacity:0}
+.counter-el{position:absolute;bottom:0;left:0;right:0;height:70px;background:#c8a878;border-top:4px solid #a88858;opacity:0;transition:opacity .6s}
+.toast-group{position:absolute;bottom:62px;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .6s;text-align:center}
+.toast-plate{width:56px;height:14px;background:#f8f0e0;border-radius:50%;border:1px solid #d8c8a0;margin:0 auto}
+.toast-el{width:34px;height:20px;background:#c8880a;border-radius:4px;margin:0 auto;margin-top:-10px;border:1px solid #a86808}
+.steam-grp{display:flex;gap:5px;justify-content:center;margin-bottom:4px}
+.steam-p{width:3px;height:12px;background:rgba(255,255,255,.5);border-radius:2px;animation:steamrise 1.5s ease-in-out infinite}
+.steam-p:nth-child(2){animation-delay:.3s}.steam-p:nth-child(3){animation-delay:.6s}
+@keyframes steamrise{0%{opacity:0;transform:translateY(0)}50%{opacity:.7}100%{opacity:0;transform:translateY(-14px)}}
+.char-el{position:absolute;transition:left .8s ease,bottom .4s ease}
+.char-head-sp{width:30px;height:30px;background:#f5c5a0;border-radius:50%;margin:0 auto;position:relative;overflow:hidden}
+.char-hair-sp{position:absolute;top:0;left:0;right:0;height:13px;border-radius:50% 50% 0 0}
+.hair-f{background:#3d1a0a}.hair-m{background:#1a1a2e}
+.char-eyes-sp{display:flex;gap:7px;justify-content:center;margin-top:12px;position:relative;z-index:1}
+.char-eye-sp{width:4px;height:4px;background:#2a1a0a;border-radius:50%;animation:blink 5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.char-body-sp{width:26px;height:32px;border-radius:10px 10px 4px 4px;margin:0 auto;margin-top:-4px}
+.body-f{background:#9b59b6}.body-m{background:#2980b9}
+.char-legs-sp{display:flex;gap:5px;justify-content:center;margin-top:2px}
+.char-leg-sp{width:10px;height:18px;background:#2c2c3a;border-radius:0 0 4px 4px}
+.zzz-grp{position:absolute;transition:opacity .6s}
+.zzz-l{color:#9988cc;font-weight:700;line-height:1;animation:floatup 2s ease-in-out infinite;display:inline-block}
+@keyframes floatup{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* Dialog */
+.dialog-area{background:var(--surface);border-top:1px solid #2a2545;padding:14px 16px 10px;flex-shrink:0}
+.dlg-speaker{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.dlg-en{font-size:15px;line-height:1.55;color:var(--text);min-height:44px}
+.dlg-en .word-tap{color:var(--accent2);border-bottom:1px dashed var(--accent);cursor:pointer}
+.dlg-ru{font-size:12px;color:var(--text2);margin-top:5px;min-height:18px}
+
+/* Choices */
+.choices-area{padding:10px 14px 14px;display:flex;flex-direction:column;gap:7px;flex:1;overflow-y:auto}
+.choice-item{background:var(--surface);border:1px solid #2a2545;border-radius:12px;padding:11px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:10px}
+.choice-item:hover{border-color:var(--accent);background:var(--surface2)}
+.choice-item.correct{border-color:var(--correct);background:#1a3025}
+.choice-item.wrong{border-color:var(--wrong);background:#301a1a;opacity:.7}
+.choice-item.disabled{pointer-events:none}
+.choice-letter{width:22px;height:22px;border-radius:50%;background:#2a2545;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--text2);flex-shrink:0;transition:all .15s}
+.choice-item.correct .choice-letter{background:var(--correct);color:white}
+.choice-item.wrong .choice-letter{background:var(--wrong);color:white}
+.choice-text{font-size:13px;color:var(--text);line-height:1.4}
+.choice-hint{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* PITCH TRAINER */
+.pitch-area{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto}
+.pitch-phrase-box{background:var(--surface);border-radius:12px;padding:12px 14px;text-align:center}
+.pitch-phrase-en{font-size:15px;font-weight:500;color:var(--text);font-family:'Playfair Display',serif;line-height:1.4}
+.pitch-phrase-ru{font-size:11px;color:var(--text2);margin-top:4px}
+.wave-wrap{display:flex;flex-direction:column;gap:5px}
+.wave-label-row{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--text2)}
+.pitch-badge{font-size:10px;padding:2px 7px;border-radius:10px}
+.badge-ref{background:#c8a96e22;color:#c8a96e}
+.badge-you{background:#5ba8e522;color:#5ba8e5}
+.pitch-canvas{display:block;width:100%;border-radius:8px;background:#13112a}
+.match-track{height:8px;background:var(--surface2);border-radius:6px;overflow:hidden}
+.match-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--wrong),var(--accent),var(--correct));transition:width .4s ease}
+.match-text{font-size:13px;color:var(--text);text-align:center;min-height:20px;font-weight:500}
+.pitch-tip{background:var(--surface);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.6;border-left:3px solid var(--accent);display:none}
+.pitch-tip.show{display:block}
+.pitch-controls{display:flex;flex-direction:column;align-items:center;gap:8px}
+.mic-ring{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s}
+.mic-ring:active{transform:scale(.95)}
+.mic-ring.rec{background:linear-gradient(135deg,#e05c5c,#ff9999);animation:mpulse 1s infinite}
+@keyframes mpulse{0%{box-shadow:0 0 0 0 #e05c5c44}70%{box-shadow:0 0 0 16px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.pitch-status{font-size:12px;color:var(--text2);text-align:center}
+.attempts-row{font-size:11px;color:var(--text2);text-align:center;min-height:16px}
+
+/* Next button */
+.btn-next{margin:0 14px 14px;padding:13px;background:linear-gradient(135deg,#c8a96e,#e8c98e);color:#0e0c1a;border:none;border-radius:12px;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;display:none;transition:opacity .2s,transform .1s}
+.btn-next:active{transform:scale(.98)}.btn-next.show{display:block}
+
+/* RESULT */
+#screen-result{background:radial-gradient(ellipse at 50% 30%,#2a1f4a 0%,#0e0c1a 70%);align-items:center;justify-content:center;text-align:center;padding:2rem 1.5rem;gap:1.2rem}
+.res-emoji{font-size:56px}
+.res-title{font-family:'Playfair Display',serif;font-size:26px;color:var(--accent2)}
+.res-sub{font-size:14px;color:var(--text2);line-height:1.6}
+.res-scores{background:var(--surface);border:1px solid #3a3555;border-radius:var(--radius);padding:1rem 1.5rem;display:flex;gap:1.5rem}
+.rs{text-align:center}.rs-num{font-size:26px;font-weight:500;color:var(--accent)}.rs-lbl{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* PAYWALL */
+#screen-paywall{background:radial-gradient(ellipse at 50% 0%,#2a1f4a 0%,#0e0c1a 60%);align-items:center;justify-content:center;text-align:center;padding:2rem 1.5rem;gap:1.2rem}
+.pw-lock{font-size:52px}
+.pw-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--text)}
+.pw-sub{font-size:13px;color:var(--text2);line-height:1.6}
+.price-badge{background:linear-gradient(135deg,#c8a96e22,#e8c98e22);border:1px solid var(--accent);border-radius:var(--radius);padding:1rem 1.5rem;width:100%}
+.price-num{font-size:32px;font-weight:500;color:var(--accent2)}.price-per{font-size:13px;color:var(--text2)}
+.features{text-align:left;display:flex;flex-direction:column;gap:8px;width:100%}
+.feat{display:flex;gap:10px;font-size:13px;color:var(--text);align-items:center}
+.feat-icon{color:var(--correct);font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div id="screen-onboard" class="screen active">
+  <div class="logo-mark">S</div>
+  <div>
+    <div class="logo-title">Storylingo</div>
+    <div class="logo-sub" style="margin-top:6px">Учи английский через жизнь<br>твоего персонажа в Нью-Йорке</div>
+  </div>
+  <div style="width:100%">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:center">Выбери своего персонажа</div>
+    <div class="char-select">
+      <div class="char-card selected" id="card-maya" onclick="selectChar('maya')">
+        <div class="char-emoji">👩</div><div class="char-name">Maya</div><div class="char-desc">Дизайнер, Brooklyn</div>
+      </div>
+      <div class="char-card" id="card-alex" onclick="selectChar('alex')">
+        <div class="char-emoji">👨</div><div class="char-name">Alex</div><div class="char-desc">Разработчик, Manhattan</div>
+      </div>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="startGame()">Начать историю →</button>
+  <div style="font-size:11px;color:var(--text2)">5 эпизодов бесплатно · Потом 1 500₸/мес</div>
+</div>
+
+<!-- LOADING -->
+<div id="screen-loading" class="screen">
+  <div class="ld-text" id="ld-text">Загружаем историю...</div>
+  <div class="ld-row"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen">
+  <div class="progress-row">
+    <div class="ep-label" id="ep-label">Эп.1</div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="score-lbl" id="score-lbl">0 pts</div>
+  </div>
+
+  <div class="scene-area">
+    <div class="scene-bg bg-bedroom" id="bg-bedroom"></div>
+    <div class="scene-bg bg-kitchen" id="bg-kitchen"></div>
+    <div class="stars-wrap" id="stars-wrap"></div>
+    <div class="moon-el" id="moon-el"></div>
+    <div class="sun-el" id="sun-el"></div>
+    <div class="window-el" id="window-el"><div class="win-h"></div><div class="win-v"></div></div>
+    <div class="bed-group" id="bed-el">
+      <div class="bed-frame-el">
+        <div class="bed-mat"></div><div class="bed-pillow"></div>
+        <div class="bed-blanket" id="blanket-el"></div>
+      </div>
+    </div>
+    <div class="counter-el" id="counter-el"></div>
+    <div class="toast-group" id="toast-el">
+      <div class="steam-grp"><div class="steam-p"></div><div class="steam-p"></div><div class="steam-p"></div></div>
+      <div class="toast-plate"></div><div class="toast-el"></div>
+    </div>
+    <div class="char-el" id="char-el" style="position:absolute;bottom:0px;left:10px;transition:left 0.8s ease,bottom 0.4s ease">
+      <svg id="char-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 210" style="height:200px;width:auto;display:block;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));transform-origin:bottom center;transition:left 0.8s ease,bottom 0.4s ease">
+  <!-- Hair back -->
+  <ellipse cx="65" cy="52" rx="32" ry="36" fill="#8B3A0F"/>
+  <!-- Ponytail -->
+  <path d="M88 40 Q115 30 112 65 Q110 80 95 78 Q90 60 88 50Z" fill="#8B3A0F"/>
+  <!-- Hairband -->
+  <rect x="38" y="38" width="54" height="8" rx="4" fill="#3a6bb5"/>
+  <!-- Neck -->
+  <rect x="59" y="88" width="12" height="14" rx="3" fill="#f5c8a0"/>
+  <!-- White shirt -->
+  <rect x="50" y="100" width="30" height="38" rx="4" fill="#f0ede8"/>
+  <!-- Brown vest -->
+  <rect x="42" y="100" width="46" height="42" rx="8" fill="#7a3a10"/>
+  <!-- White shirt visible -->
+  <rect x="51" y="102" width="28" height="36" rx="3" fill="#f0ede8"/>
+  <!-- Belt -->
+  <rect x="42" y="136" width="46" height="9" rx="3" fill="#5a3000"/>
+  <rect x="59" y="136" width="12" height="9" rx="2" fill="#c8980a"/>
+  <!-- Blue shorts -->
+  <rect x="44" y="144" width="42" height="28" rx="6" fill="#3a5aaa"/>
+  <!-- Legs -->
+  <rect x="45" y="170" width="17" height="32" rx="4" fill="#f5c8a0"/>
+  <rect x="68" y="170" width="17" height="32" rx="4" fill="#f5c8a0"/>
+  <!-- Boots -->
+  <rect x="43" y="196" width="21" height="14" rx="5" fill="#5a2800"/>
+  <rect x="43" y="196" width="21" height="6" rx="3" fill="#c8980a"/>
+  <rect x="66" y="196" width="21" height="14" rx="5" fill="#5a2800"/>
+  <rect x="66" y="196" width="21" height="6" rx="3" fill="#c8980a"/>
+  <!-- Left arm waving -->
+  <path d="M42 108 Q18 95 14 78" stroke="#f5c8a0" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <circle cx="13" cy="75" r="9" fill="#f5c8a0"/>
+  <line x1="8" y1="68" x2="7" y2="62" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="12" y1="66" x2="11" y2="60" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="16" y1="66" x2="16" y2="60" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="19" y1="67" x2="20" y2="62" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <rect x="6" y="73" width="14" height="6" rx="3" fill="#5a2800"/>
+  <!-- Right arm -->
+  <path d="M88 108 Q100 118 98 130" stroke="#f5c8a0" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <circle cx="97" cy="134" r="8" fill="#f5c8a0"/>
+  <rect x="91" y="128" width="14" height="6" rx="3" fill="#5a2800"/>
+  <!-- Face -->
+  <ellipse cx="65" cy="68" rx="26" ry="28" fill="#f5c8a0"/>
+  <!-- Hair front -->
+  <path d="M39 58 Q42 38 65 36 Q88 38 91 58 Q85 44 65 44 Q45 44 39 58Z" fill="#8B3A0F"/>
+  <!-- Eyes white -->
+  <ellipse cx="54" cy="65" rx="6" ry="7" fill="white"/>
+  <ellipse cx="76" cy="65" rx="6" ry="7" fill="white"/>
+  <!-- Iris blue -->
+  <ellipse cx="55" cy="66" rx="4" ry="5" fill="#3a7aee"/>
+  <ellipse cx="77" cy="66" rx="4" ry="5" fill="#3a7aee"/>
+  <!-- Pupil -->
+  <ellipse cx="56" cy="65" rx="2.5" ry="3" fill="#1a2a6a"/>
+  <ellipse cx="78" cy="65" rx="2.5" ry="3" fill="#1a2a6a"/>
+  <!-- Highlight -->
+  <circle cx="57" cy="64" r="1" fill="white"/>
+  <circle cx="79" cy="64" r="1" fill="white"/>
+  <!-- Lashes -->
+  <path d="M49 60 Q50 56 54 58" stroke="#3d1a0a" stroke-width="1.2" fill="none"/>
+  <path d="M71 58 Q76 56 80 60" stroke="#3d1a0a" stroke-width="1.2" fill="none"/>
+  <!-- Blush -->
+  <ellipse cx="47" cy="72" rx="6" ry="3" fill="#f0a0a0" opacity="0.5"/>
+  <ellipse cx="83" cy="72" rx="6" ry="3" fill="#f0a0a0" opacity="0.5"/>
+  <!-- Nose -->
+  <path d="M63 72 Q65 75 67 72" stroke="#e0a080" stroke-width="1.2" fill="none"/>
+  <!-- Smile -->
+  <path d="M57 79 Q65 85 73 79" stroke="#c07060" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>
+    </div>
+    <div class="zzz-grp" id="zzz-el" style="position:absolute;bottom:100px;left:68px">
+      <span class="zzz-l" style="font-size:10px">z</span>
+      <span class="zzz-l" style="font-size:13px;animation-delay:.4s">z</span>
+      <span class="zzz-l" style="font-size:17px;animation-delay:.8s">Z</span>
+    </div>
+  </div>
+
+  <div class="dialog-area">
+    <div class="dlg-speaker" id="dlg-speaker">Narrator</div>
+    <div class="dlg-en" id="dlg-en">...</div>
+    <div class="dlg-ru" id="dlg-ru"></div>
+  </div>
+
+  <div class="choices-area" id="choices-area"></div>
+
+  <div class="pitch-area" id="pitch-area" style="display:none">
+    <div class="pitch-phrase-box">
+      <div class="pitch-phrase-en" id="pitch-phrase-en"></div>
+      <div class="pitch-phrase-ru" id="pitch-phrase-ru"></div>
+    </div>
+    <div class="wave-wrap">
+      <div class="wave-label-row"><span>Эталон — native speaker</span><span class="pitch-badge badge-ref">Повтори эту кривую</span></div>
+      <canvas class="pitch-canvas" id="ref-canvas" height="60"></canvas>
+    </div>
+    <div class="wave-wrap">
+      <div class="wave-label-row"><span>Твой голос</span><span class="pitch-badge badge-you" id="you-badge">ожидание...</span></div>
+      <canvas class="pitch-canvas" id="user-canvas" height="60"></canvas>
+    </div>
+    <div class="match-track"><div class="match-fill" id="match-fill" style="width:0%"></div></div>
+    <div class="match-text" id="match-text">Нажми на микрофон и повтори фразу</div>
+    <div class="pitch-tip" id="pitch-tip"></div>
+    <div class="pitch-controls">
+      <button class="mic-ring" id="mic-btn" onclick="toggleVoice()">🎤</button>
+      <div class="pitch-status" id="pitch-status">Нажми и говори</div>
+      <div class="attempts-row" id="attempts-row"></div>
+    </div>
+  </div>
+
+  <button class="btn-next" id="btn-next" onclick="nextStep()">Продолжить →</button>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="res-emoji">⭐</div>
+  <div class="res-title">Эпизод завершён!</div>
+  <div class="res-sub" id="res-sub"></div>
+  <div class="res-scores">
+    <div class="rs"><div class="rs-num" id="res-score">0</div><div class="rs-lbl">очков</div></div>
+    <div class="rs"><div class="rs-num" id="res-correct">0/0</div><div class="rs-lbl">ответов</div></div>
+    <div class="rs"><div class="rs-num" id="res-pitch">—</div><div class="rs-lbl">питч</div></div>
+  </div>
+  <button class="btn-primary" onclick="nextEpisode()">Следующий эпизод →</button>
+  <div style="font-size:11px;color:var(--text2)" id="ep-counter">Эпизод 1 из 5 бесплатных</div>
+</div>
+
+<!-- PAYWALL -->
+<div id="screen-paywall" class="screen">
+  <div class="pw-lock">🔒</div>
+  <div class="pw-title">Продолжить историю</div>
+  <div class="pw-sub">Ты прошла 5 бесплатных эпизодов.<br>Разблокируй полную историю Майи в Нью-Йорке!</div>
+  <div class="price-badge"><div class="price-num">1 500₸</div><div class="price-per">в месяц · безлимит эпизодов</div></div>
+  <div class="features">
+    <div class="feat"><span class="feat-icon">✓</span>Все 30+ эпизодов сезона 1</div>
+    <div class="feat"><span class="feat-icon">✓</span>Питч-тренер — выравниваем акцент</div>
+    <div class="feat"><span class="feat-icon">✓</span>Новые эпизоды каждую неделю</div>
+    <div class="feat"><span class="feat-icon">✓</span>Словарь и история прогресса</div>
+  </div>
+  <button class="btn-primary" onclick="handlePayment()">Подписаться за 1 500₸/мес</button>
+  <div style="font-size:11px;color:var(--text2)">Оплата через Kaspi · Отмена в любой момент</div>
+</div>
+
+<script>
+// ══ STATE ══
+const G={char:'maya',episode:1,step:0,score:0,correct:0,total:0,
+  pitchBest:0,pitchAttempts:0,pitchHistory:[],
+  isRec:false,audioCtx:null,analyser:null,stream:null,animFrame:null,pitchRaw:[]};
+
+// ══ EPISODE DATA ══
+const EPISODES_DATA = [
+
+  // ══════════════════════════════════════════
+  // EPISODE 1 — Monday Morning
+  // ══════════════════════════════════════════
+  {
+    id: 1,
+    title: 'Monday Morning',
+    titleRu: 'Понедельник утром',
+    scene_intro: 'bedroom',
+    steps: [
+      {
+        type: 'narration', scene: 'bedroom', action: 'sleep',
+        speaker: 'Narrator',
+        en: '{name} is sleeping in her Brooklyn apartment. It\'s Monday morning.',
+        ru: '{name} спит в своей квартире в Бруклине. Понедельник утром.'
+      },
+      {
+        type: 'narration', scene: 'bedroom', action: 'wakeup',
+        speaker: 'Alarm ⏰',
+        en: '"BEEP BEEP!" — 7:30 AM. Time to <w>wake up</w>!',
+        ru: '7:30 утра. Время просыпаться!'
+      },
+      {
+        type: 'choice', scene: 'bedroom', action: 'wakeup',
+        speaker: 'Your friend texts you',
+        en: '"Good morning! How are you <w>doing</w> today?"',
+        ru: 'Твоя подруга пишет: "Доброе утро! Как ты сегодня?"',
+        options: [
+          { text: '"I\'m doing great, thanks! Just woke up."', hint: 'doing great — правильно ✓', correct: true },
+          { text: '"I am do very good morning."', hint: 'грамматическая ошибка', correct: false },
+          { text: '"Yes I fine very much today."', hint: 'неправильный порядок слов', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'kitchen', action: 'kitchen',
+        speaker: 'Narrator',
+        en: '{name} <w>gets up</w> and walks to the kitchen. The sun is shining through the window!',
+        ru: '{name} встаёт и идёт на кухню. Солнце светит через окно!'
+      },
+      {
+        type: 'voice', scene: 'kitchen', action: 'kitchen',
+        speaker: 'Alex (roommate)',
+        en: '"Hey! I made <w>avocado toast</w>. Are you <w>hungry</w>?"',
+        ru: 'Эй! Я сделал тост с авокадо. Ты голоден(а)?',
+        voiceEn: '"Yes, I\'m starving! It smells amazing."',
+        voiceRu: 'Да, я ужасно голоден(а)! Пахнет потрясающе.',
+        refPitch: [.32,.36,.42,.50,.58,.65,.70,.73,.75,.78,.80,.82,.80,.76,.70,.64,
+                   .58,.52,.46,.40,.35,.30,.28,.25,.22,.20,.22,.28,.34,.40,
+                   .46,.53,.60,.66,.70,.73,.71,.67,.71,.75,.79,.83,.85,.84,.81,
+                   .75,.67,.57,.47,.37,.30,.24,.20]
+      },
+      {
+        type: 'choice', scene: 'kitchen', action: 'kitchen',
+        speaker: 'Grammar check',
+        en: 'Alex says: "I _____ toast every morning." Which is correct?',
+        ru: 'Выбери правильную форму глагола:',
+        options: [
+          { text: '"make" — Present Simple', hint: 'для регулярных действий ✓', correct: true },
+          { text: '"am making" — Present Continuous', hint: 'для действий прямо сейчас', correct: false },
+          { text: '"made" — Past Simple', hint: 'для прошлого времени', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 2 — The Coffee Shop
+  // ══════════════════════════════════════════
+  {
+    id: 2,
+    title: 'The Coffee Shop',
+    titleRu: 'Кофейня',
+    scene_intro: 'cafe',
+    steps: [
+      {
+        type: 'narration', scene: 'street', action: 'walk',
+        speaker: 'Narrator',
+        en: '{name} walks down <w>Bedford Avenue</w>. Brooklyn smells like coffee and fresh bread.',
+        ru: '{name} идёт по Бедфорд Авеню. В Бруклине пахнет кофе и свежим хлебом.'
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Barista',
+        en: '"Hi! What can I <w>get</w> for you today?"',
+        ru: 'Привет! Что вам взять сегодня?',
+        options: [
+          { text: '"I\'d like a large latte, please."', hint: 'I\'d like — вежливо ✓', correct: true },
+          { text: '"Give me coffee large."', hint: 'нет слова please, странный порядок', correct: false },
+          { text: '"I want the latte of large."', hint: 'неправильная структура', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Narrator',
+        en: 'The barista smiles. "{name} has been coming here every day <w>for years</w>."',
+        ru: 'Бариста улыбается. "{name} ходит сюда каждый день уже несколько лет."'
+      },
+      {
+        type: 'voice', scene: 'cafe', action: 'cafe',
+        speaker: 'Barista',
+        en: '"Your name for the order?"',
+        ru: 'Ваше имя для заказа?',
+        voiceEn: '"It\'s Maya. Have a great day!"',
+        voiceRu: 'Это Майя. Хорошего дня!',
+        refPitch: [.38,.42,.46,.52,.56,.58,.56,.50,.44,.38,.32,.28,.24,.20,
+                   .22,.26,.34,.42,.50,.56,.62,.66,.68,.65,.60,.52,.44,.36,.28,.22]
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Grammar check',
+        en: 'You sit down. A stranger asks: "Is this seat <w>taken</w>?"',
+        ru: 'Правильный ответ незнакомцу:',
+        options: [
+          { text: '"No, please go ahead!"', hint: 'go ahead — пожалуйста, садитесь ✓', correct: true },
+          { text: '"No, it is free seat here."', hint: 'артикль и порядок слов', correct: false },
+          { text: '"Yes it is not taken by nobody."', hint: 'двойное отрицание', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 3 — The Stranger
+  // ══════════════════════════════════════════
+  {
+    id: 3,
+    title: 'The Stranger',
+    titleRu: 'Незнакомец',
+    scene_intro: 'cafe',
+    steps: [
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Narrator',
+        en: 'The stranger sits down. He has dark hair and a warm smile. His name is <w>Daniel</w>.',
+        ru: 'Незнакомец садится. У него тёмные волосы и тёплая улыбка. Его зовут Дэниел.'
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Daniel',
+        en: '"I\'ve never seen you here before. Do you come here <w>often</w>?"',
+        ru: 'Я никогда раньше вас здесь не видел. Вы часто сюда ходите?',
+        options: [
+          { text: '"Every morning! It\'s my favourite spot."', hint: 'favourite spot — любимое место ✓', correct: true },
+          { text: '"Yes I come here every of the mornings."', hint: 'неправильное употребление every', correct: false },
+          { text: '"I am coming here always morning."', hint: 'Present Continuous для привычек неверно', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Narrator',
+        en: 'Daniel laughs. He <w>works nearby</w> — at a design studio on North 6th Street.',
+        ru: 'Дэниел смеётся. Он работает неподалёку — в дизайн-студии на Норт 6th Стрит.'
+      },
+      {
+        type: 'voice', scene: 'cafe', action: 'cafe',
+        speaker: 'Daniel',
+        en: '"What do you do for work?"',
+        ru: 'Кем вы работаете?',
+        voiceEn: '"I\'m a graphic designer. I work freelance."',
+        voiceRu: 'Я графический дизайнер. Работаю фрилансером.',
+        refPitch: [.30,.35,.40,.48,.56,.62,.66,.68,.66,.62,.56,.50,.44,.38,
+                   .32,.28,.30,.36,.44,.52,.58,.62,.60,.54,.46,.38,.30,.24]
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Grammar check',
+        en: 'Daniel says: "I _____ for this company since 2020."',
+        ru: 'Выбери правильное время:',
+        options: [
+          { text: '"have been working" — Present Perfect Continuous', hint: 'действие началось в прошлом и продолжается ✓', correct: true },
+          { text: '"work" — Present Simple', hint: 'не показывает длительность', correct: false },
+          { text: '"worked" — Past Simple', hint: 'действие закончилось', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 4 — Late for Work
+  // ══════════════════════════════════════════
+  {
+    id: 4,
+    title: 'Late for Work!',
+    titleRu: 'Опоздание на работу!',
+    scene_intro: 'street',
+    steps: [
+      {
+        type: 'narration', scene: 'street', action: 'walk',
+        speaker: 'Narrator',
+        en: '{name} checks her phone. 9:15 AM! She\'s <w>running late</w> for her meeting!',
+        ru: '{name} смотрит на телефон. 9:15! Она опаздывает на встречу!'
+      },
+      {
+        type: 'choice', scene: 'street', action: 'walk',
+        speaker: 'Boss (calling)',
+        en: '"Where are you? The meeting <w>starts</w> in five minutes!"',
+        ru: 'Где ты? Встреча начинается через пять минут!',
+        options: [
+          { text: '"I\'m on my way! I\'ll be there in ten minutes."', hint: 'on my way — в пути ✓', correct: true },
+          { text: '"I am coming to there right now moment."', hint: 'лишние слова, неверная структура', correct: false },
+          { text: '"Sorry I will come soon maybe."', hint: 'maybe звучит неуверенно и странно', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'office', action: 'office',
+        speaker: 'Narrator',
+        en: '{name} <w>rushes</w> into the office. Everyone is already in the conference room.',
+        ru: '{name} врывается в офис. Все уже в переговорной.'
+      },
+      {
+        type: 'voice', scene: 'office', action: 'office',
+        speaker: 'Colleague Sarah',
+        en: '"You made it! We were worried about you."',
+        ru: 'Ты успела! Мы волновались.',
+        voiceEn: '"I\'m so sorry! The subway was delayed."',
+        voiceRu: 'Мне очень жаль! Метро задержалось.',
+        refPitch: [.28,.32,.38,.46,.54,.60,.64,.62,.58,.50,.42,.34,.28,.22,
+                   .24,.30,.38,.46,.54,.60,.62,.58,.52,.44,.36,.28,.22,.18]
+      },
+      {
+        type: 'choice', scene: 'office', action: 'office',
+        speaker: 'Grammar check',
+        en: '"The meeting _____ by the time you arrived."',
+        ru: 'Выбери правильное время:',
+        options: [
+          { text: '"had already started" — Past Perfect', hint: 'действие завершилось до другого прошлого ✓', correct: true },
+          { text: '"already started" — Past Simple', hint: 'без had — неполная форма', correct: false },
+          { text: '"was starting" — Past Continuous', hint: 'процесс, не завершение', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 5 — Lunch Break
+  // ══════════════════════════════════════════
+  {
+    id: 5,
+    title: 'Lunch Break',
+    titleRu: 'Обеденный перерыв',
+    scene_intro: 'cafe',
+    steps: [
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Narrator',
+        en: '1 PM. {name} and Sarah go to a <w>deli</w> around the corner for lunch.',
+        ru: '13:00. {name} и Сара идут в кафе за углом на обед.'
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Server',
+        en: '"Are you ready to <w>order</w>, or do you need a few more minutes?"',
+        ru: 'Вы готовы заказать или вам нужно ещё немного времени?',
+        options: [
+          { text: '"We\'re ready! I\'ll have the chicken sandwich."', hint: 'I\'ll have — стандартный заказ ✓', correct: true },
+          { text: '"Yes we want to order the sandwich of chicken."', hint: 'неправильный порядок слов', correct: false },
+          { text: '"Give to us chicken sandwich please."', hint: 'неверная структура', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Sarah',
+        en: '"So... who was that guy in the coffee shop this morning? You were <w>glowing</w>!"',
+        ru: 'Итак... кто был тот парень в кофейне утром? Ты прямо светилась!'
+      },
+      {
+        type: 'voice', scene: 'cafe', action: 'cafe',
+        speaker: 'Sarah',
+        en: '"Did he ask for your number?"',
+        ru: 'Он попросил твой номер?',
+        voiceEn: '"Not yet, but we\'re meeting for coffee tomorrow!"',
+        voiceRu: 'Ещё нет, но мы встречаемся на кофе завтра!',
+        refPitch: [.26,.30,.36,.44,.52,.58,.62,.60,.56,.50,.42,.34,.26,.20,
+                   .22,.28,.36,.46,.56,.64,.68,.70,.68,.62,.54,.46,.38,.30,.22,.18]
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Grammar check',
+        en: 'Sarah says: "You _____ him again? That\'s so exciting!"',
+        ru: 'Выбери правильную форму:',
+        options: [
+          { text: '"\'re seeing" — Present Continuous (future plan)', hint: 'для запланированного будущего ✓', correct: true },
+          { text: '"will see" — Future Simple', hint: 'спонтанное решение, не план', correct: false },
+          { text: '"see" — Present Simple', hint: 'не выражает будущего', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 6 — Second Date
+  // ══════════════════════════════════════════
+  {
+    id: 6,
+    title: 'Second Meeting',
+    titleRu: 'Вторая встреча',
+    scene_intro: 'cafe',
+    steps: [
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Narrator',
+        en: 'Tuesday afternoon. {name} arrives at the coffee shop. Daniel is already <w>waiting</w>.',
+        ru: 'Вторник, после обеда. {name} приходит в кофейню. Дэниел уже ждёт.'
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Daniel',
+        en: '"I\'ve been <w>looking forward</w> to this all day!"',
+        ru: 'Я ждал этого весь день!',
+        options: [
+          { text: '"Me too! I\'ve been thinking about our conversation."', hint: 'Me too + Present Perfect ✓', correct: true },
+          { text: '"Same here, I think about also yesterday conversation."', hint: 'неправильный порядок слов', correct: false },
+          { text: '"Yes I also think this all the day too."', hint: 'лишние слова, неверная структура', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Narrator',
+        en: 'They talk for two hours. Daniel is <w>originally from</w> Chicago but moved to NYC three years ago.',
+        ru: 'Они разговаривают два часа. Дэниел родом из Чикаго, но переехал в Нью-Йорк три года назад.'
+      },
+      {
+        type: 'voice', scene: 'cafe', action: 'cafe',
+        speaker: 'Daniel',
+        en: '"What do you love most about New York?"',
+        ru: 'Что тебе больше всего нравится в Нью-Йорке?',
+        voiceEn: '"The energy! Every day feels like an adventure."',
+        voiceRu: 'Энергия! Каждый день ощущается как приключение.',
+        refPitch: [.28,.34,.42,.50,.58,.64,.68,.66,.60,.52,.44,.36,.28,.22,
+                   .24,.32,.42,.52,.60,.66,.68,.64,.56,.46,.36,.28,.20,.16]
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Grammar check',
+        en: 'Daniel asks: "Have you _____ to the new rooftop bar on Kent Avenue?"',
+        ru: 'Выбери правильную форму:',
+        options: [
+          { text: '"been" — Present Perfect (experience)', hint: 'have been = бывал(а) ✓', correct: true },
+          { text: '"went" — Past Simple', hint: 'после have нужен Participle II', correct: false },
+          { text: '"go" — базовый глагол', hint: 'после have нужен Participle II', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 7 — Central Park
+  // ══════════════════════════════════════════
+  {
+    id: 7,
+    title: 'Central Park',
+    titleRu: 'Центральный парк',
+    scene_intro: 'park',
+    steps: [
+      {
+        type: 'narration', scene: 'park', action: 'park',
+        speaker: 'Narrator',
+        en: 'Weekend! Daniel suggests a walk in <w>Central Park</w>. The trees are beautiful in autumn.',
+        ru: 'Выходные! Дэниел предлагает прогулку в Центральном парке. Деревья прекрасны осенью.'
+      },
+      {
+        type: 'choice', scene: 'park', action: 'park',
+        speaker: 'Daniel',
+        en: '"Should we <w>grab</w> some food from a food truck?"',
+        ru: 'Возьмём что-нибудь поесть из фуд-трака?',
+        options: [
+          { text: '"Absolutely! I\'m in the mood for tacos."', hint: 'in the mood for — хочется ✓', correct: true },
+          { text: '"Yes we should to grab the food from truck."', hint: 'should + to — ошибка', correct: false },
+          { text: '"OK I want eat food from the truck of food."', hint: 'неправильный порядок слов', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'park', action: 'park',
+        speaker: 'Narrator',
+        en: 'They sit on a bench by the <w>lake</w>. Ducks swim past. It\'s a perfect afternoon.',
+        ru: 'Они сидят на скамейке у озера. Утки плывут мимо. Идеальный полдень.'
+      },
+      {
+        type: 'voice', scene: 'park', action: 'park',
+        speaker: 'Daniel',
+        en: '"I really like spending time with you."',
+        ru: 'Мне правда нравится проводить с тобой время.',
+        voiceEn: '"I feel the same way. This is really nice."',
+        voiceRu: 'Я тоже. Это правда здорово.',
+        refPitch: [.30,.36,.44,.52,.58,.62,.60,.54,.46,.38,.30,.24,
+                   .22,.26,.32,.40,.48,.56,.62,.64,.60,.52,.42,.32,.24,.18]
+      },
+      {
+        type: 'choice', scene: 'park', action: 'park',
+        speaker: 'Grammar check',
+        en: '"If the weather _____ good tomorrow, let\'s come back here."',
+        ru: 'Выбери правильную форму условного:',
+        options: [
+          { text: '"is" — First Conditional (реальное условие)', hint: 'If + Present Simple → будущее ✓', correct: true },
+          { text: '"will be" — Future в условии', hint: 'после if не используется will', correct: false },
+          { text: '"would be" — Second Conditional', hint: 'нереальное условие — не то', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 8 — The Argument
+  // ══════════════════════════════════════════
+  {
+    id: 8,
+    title: 'Misunderstanding',
+    titleRu: 'Недоразумение',
+    scene_intro: 'street',
+    steps: [
+      {
+        type: 'narration', scene: 'street', action: 'walk',
+        speaker: 'Narrator',
+        en: 'Monday again. {name} sees Daniel\'s <w>Instagram</w> — a photo with another girl. Her heart sinks.',
+        ru: 'Снова понедельник. {name} видит инстаграм Дэниела — фото с другой девушкой. Сердце падает.'
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: '{name} thinks',
+        en: 'She <w>confronts</w> Daniel at the coffee shop. What does she say?',
+        ru: 'Она идёт к Дэниелу в кофейню. Что она говорит?',
+        options: [
+          { text: '"Who is the girl in your photo? I\'m confused."', hint: 'I\'m confused — честно и прямо ✓', correct: true },
+          { text: '"You are bad person because of photo girl."', hint: 'агрессивно и неграмотно', correct: false },
+          { text: '"I see you with girl so now I am angry to you."', hint: 'неправильные предлоги', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'cafe', action: 'cafe',
+        speaker: 'Daniel',
+        en: '"That\'s my <w>sister</w>! She visited from Chicago last weekend."',
+        ru: 'Это моя сестра! Она приезжала из Чикаго на прошлые выходные.'
+      },
+      {
+        type: 'voice', scene: 'cafe', action: 'cafe',
+        speaker: '{name}',
+        en: 'How do you apologise?',
+        ru: 'Как ты извиняешься?',
+        voiceEn: '"I\'m so sorry! I jumped to conclusions."',
+        voiceRu: 'Мне очень жаль! Я поторопилась с выводами.',
+        refPitch: [.24,.28,.34,.42,.50,.56,.58,.54,.48,.40,.32,.24,.18,
+                   .20,.28,.38,.48,.56,.60,.58,.50,.40,.30,.22,.16,.14]
+      },
+      {
+        type: 'choice', scene: 'cafe', action: 'cafe',
+        speaker: 'Grammar check',
+        en: 'Daniel laughs: "Don\'t worry! You _____ have asked me first."',
+        ru: 'Выбери правильную форму:',
+        options: [
+          { text: '"could" — прошлое возможное действие', hint: 'could have + Participle II ✓', correct: true },
+          { text: '"can" — Present Modal', hint: 'не для прошлого', correct: false },
+          { text: '"should to" — ошибочная форма', hint: 'should не требует to', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 9 — First Date (official)
+  // ══════════════════════════════════════════
+  {
+    id: 9,
+    title: 'The First Date',
+    titleRu: 'Первое свидание',
+    scene_intro: 'restaurant',
+    steps: [
+      {
+        type: 'narration', scene: 'restaurant', action: 'restaurant',
+        speaker: 'Narrator',
+        en: 'Friday evening. Daniel takes {name} to a <w>rooftop restaurant</w> in Manhattan.',
+        ru: 'Пятничный вечер. Дэниел ведёт {name} в ресторан на крыше в Манхэттене.'
+      },
+      {
+        type: 'choice', scene: 'restaurant', action: 'restaurant',
+        speaker: 'Waiter',
+        en: '"Good evening! Can I start you off with some <w>drinks</w>?"',
+        ru: 'Добрый вечер! Могу я предложить вам что-нибудь выпить?',
+        options: [
+          { text: '"Yes, we\'ll have two glasses of white wine, please."', hint: 'we\'ll have — правильный заказ ✓', correct: true },
+          { text: '"Please bring two of white wines for us."', hint: 'неверный счётный артикль', correct: false },
+          { text: '"We want wine two glasses white."', hint: 'неверный порядок слов', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'restaurant', action: 'restaurant',
+        speaker: 'Narrator',
+        en: 'The city <w>sparkles</w> below them. Daniel reaches across the table and takes her hand.',
+        ru: 'Город сверкает внизу. Дэниел тянется через стол и берёт её за руку.'
+      },
+      {
+        type: 'voice', scene: 'restaurant', action: 'restaurant',
+        speaker: 'Daniel',
+        en: '"This is the best evening I\'ve had in a long time."',
+        ru: 'Это лучший вечер за долгое время.',
+        voiceEn: '"I couldn\'t agree more. Thank you for tonight."',
+        voiceRu: 'Полностью согласна. Спасибо за этот вечер.',
+        refPitch: [.26,.30,.36,.44,.52,.58,.64,.68,.66,.60,.52,.44,.36,.28,.22,
+                   .20,.24,.32,.42,.52,.60,.64,.62,.54,.44,.34,.26,.18,.14]
+      },
+      {
+        type: 'choice', scene: 'restaurant', action: 'restaurant',
+        speaker: 'Grammar check',
+        en: '"This is the best restaurant I _____ ever been to!"',
+        ru: 'Выбери правильную форму:',
+        options: [
+          { text: '"\'ve" (have) — Present Perfect с ever', hint: 'ever + Present Perfect ✓', correct: true },
+          { text: '"was" — Past Simple', hint: 'не сочетается с ever в таком смысле', correct: false },
+          { text: '"am" — Present Simple', hint: 'не сочетается с been', correct: false }
+        ]
+      }
+    ]
+  },
+
+  // ══════════════════════════════════════════
+  // EPISODE 10 — The Big News
+  // ══════════════════════════════════════════
+  {
+    id: 10,
+    title: 'Big News!',
+    titleRu: 'Большие новости!',
+    scene_intro: 'office',
+    steps: [
+      {
+        type: 'narration', scene: 'office', action: 'office',
+        speaker: 'Narrator',
+        en: 'Monday morning. {name} arrives at the office to find a letter on her desk.',
+        ru: 'Понедельник утром. {name} приходит в офис и видит письмо на столе.'
+      },
+      {
+        type: 'choice', scene: 'office', action: 'office',
+        speaker: 'Boss (email)',
+        en: '"Congratulations! You\'ve been <w>selected</w> for the New York Design Award."',
+        ru: 'Поздравляем! Тебя выбрали для премии New York Design Award.',
+        options: [
+          { text: '"This is incredible! I can\'t believe it!"', hint: 'I can\'t believe it — искренняя радость ✓', correct: true },
+          { text: '"Oh this is very much good news I am happy."', hint: 'неловкая структура', correct: false },
+          { text: '"Thank to you I am selected for this award."', hint: 'неверная структура благодарности', correct: false }
+        ]
+      },
+      {
+        type: 'narration', scene: 'street', action: 'walk',
+        speaker: 'Narrator',
+        en: '{name} calls Daniel immediately. She can <w>barely</w> get the words out!',
+        ru: '{name} сразу звонит Дэниелу. Она едва может выговорить слова!'
+      },
+      {
+        type: 'voice', scene: 'street', action: 'walk',
+        speaker: 'Daniel',
+        en: '"What happened? You sound so excited!"',
+        ru: 'Что случилось? Ты звучишь так взволнованно!',
+        voiceEn: '"I won an award! I can\'t believe it\'s real!"',
+        voiceRu: 'Я выиграла награду! Я не могу поверить, что это реально!',
+        refPitch: [.28,.34,.42,.52,.60,.66,.70,.72,.70,.64,.56,.46,.36,.26,.18,
+                   .20,.28,.38,.50,.60,.68,.72,.70,.62,.52,.40,.30,.20,.14]
+      },
+      {
+        type: 'choice', scene: 'street', action: 'walk',
+        speaker: 'Grammar check',
+        en: 'Daniel says: "You _____ so hard. You deserve this!"',
+        ru: 'Выбери правильную форму:',
+        options: [
+          { text: '"have worked" — Present Perfect', hint: 'результат прошлого действия ✓', correct: true },
+          { text: '"worked" — Past Simple', hint: 'не связывает с настоящим моментом', correct: false },
+          { text: '"are working" — Present Continuous', hint: 'процесс сейчас, не прошлый результат', correct: false }
+        ]
+      }
+    ]
+  }
+
+];
+
+// Current episode data (maps from EPISODES_DATA)
+function getEP(n) {
+  const d = EPISODES_DATA[n-1];
+  if (!d) return EPISODES_DATA[0];
+  // Process steps - replace {name} placeholder marker and word highlights
+  return d;
+}
+const EP = getEP(1);;
+
+// ══ SCREENS ══
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+
+// ══ ONBOARDING ══
+const CHAR_SVGS={
+  maya:`<svg id="char-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 210" style="height:200px;width:auto;display:block;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));transform-origin:bottom center;transition:left 0.8s ease,bottom 0.4s ease">
+  <!-- Hair back -->
+  <ellipse cx="65" cy="52" rx="32" ry="36" fill="#8B3A0F"/>
+  <!-- Ponytail -->
+  <path d="M88 40 Q115 30 112 65 Q110 80 95 78 Q90 60 88 50Z" fill="#8B3A0F"/>
+  <!-- Hairband -->
+  <rect x="38" y="38" width="54" height="8" rx="4" fill="#3a6bb5"/>
+  <!-- Neck -->
+  <rect x="59" y="88" width="12" height="14" rx="3" fill="#f5c8a0"/>
+  <!-- White shirt -->
+  <rect x="50" y="100" width="30" height="38" rx="4" fill="#f0ede8"/>
+  <!-- Brown vest -->
+  <rect x="42" y="100" width="46" height="42" rx="8" fill="#7a3a10"/>
+  <!-- White shirt visible -->
+  <rect x="51" y="102" width="28" height="36" rx="3" fill="#f0ede8"/>
+  <!-- Belt -->
+  <rect x="42" y="136" width="46" height="9" rx="3" fill="#5a3000"/>
+  <rect x="59" y="136" width="12" height="9" rx="2" fill="#c8980a"/>
+  <!-- Blue shorts -->
+  <rect x="44" y="144" width="42" height="28" rx="6" fill="#3a5aaa"/>
+  <!-- Legs -->
+  <rect x="45" y="170" width="17" height="32" rx="4" fill="#f5c8a0"/>
+  <rect x="68" y="170" width="17" height="32" rx="4" fill="#f5c8a0"/>
+  <!-- Boots -->
+  <rect x="43" y="196" width="21" height="14" rx="5" fill="#5a2800"/>
+  <rect x="43" y="196" width="21" height="6" rx="3" fill="#c8980a"/>
+  <rect x="66" y="196" width="21" height="14" rx="5" fill="#5a2800"/>
+  <rect x="66" y="196" width="21" height="6" rx="3" fill="#c8980a"/>
+  <!-- Left arm waving -->
+  <path d="M42 108 Q18 95 14 78" stroke="#f5c8a0" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <circle cx="13" cy="75" r="9" fill="#f5c8a0"/>
+  <line x1="8" y1="68" x2="7" y2="62" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="12" y1="66" x2="11" y2="60" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="16" y1="66" x2="16" y2="60" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="19" y1="67" x2="20" y2="62" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <rect x="6" y="73" width="14" height="6" rx="3" fill="#5a2800"/>
+  <!-- Right arm -->
+  <path d="M88 108 Q100 118 98 130" stroke="#f5c8a0" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <circle cx="97" cy="134" r="8" fill="#f5c8a0"/>
+  <rect x="91" y="128" width="14" height="6" rx="3" fill="#5a2800"/>
+  <!-- Face -->
+  <ellipse cx="65" cy="68" rx="26" ry="28" fill="#f5c8a0"/>
+  <!-- Hair front -->
+  <path d="M39 58 Q42 38 65 36 Q88 38 91 58 Q85 44 65 44 Q45 44 39 58Z" fill="#8B3A0F"/>
+  <!-- Eyes white -->
+  <ellipse cx="54" cy="65" rx="6" ry="7" fill="white"/>
+  <ellipse cx="76" cy="65" rx="6" ry="7" fill="white"/>
+  <!-- Iris blue -->
+  <ellipse cx="55" cy="66" rx="4" ry="5" fill="#3a7aee"/>
+  <ellipse cx="77" cy="66" rx="4" ry="5" fill="#3a7aee"/>
+  <!-- Pupil -->
+  <ellipse cx="56" cy="65" rx="2.5" ry="3" fill="#1a2a6a"/>
+  <ellipse cx="78" cy="65" rx="2.5" ry="3" fill="#1a2a6a"/>
+  <!-- Highlight -->
+  <circle cx="57" cy="64" r="1" fill="white"/>
+  <circle cx="79" cy="64" r="1" fill="white"/>
+  <!-- Lashes -->
+  <path d="M49 60 Q50 56 54 58" stroke="#3d1a0a" stroke-width="1.2" fill="none"/>
+  <path d="M71 58 Q76 56 80 60" stroke="#3d1a0a" stroke-width="1.2" fill="none"/>
+  <!-- Blush -->
+  <ellipse cx="47" cy="72" rx="6" ry="3" fill="#f0a0a0" opacity="0.5"/>
+  <ellipse cx="83" cy="72" rx="6" ry="3" fill="#f0a0a0" opacity="0.5"/>
+  <!-- Nose -->
+  <path d="M63 72 Q65 75 67 72" stroke="#e0a080" stroke-width="1.2" fill="none"/>
+  <!-- Smile -->
+  <path d="M57 79 Q65 85 73 79" stroke="#c07060" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>`,
+  alex:`<svg id="char-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 210" style="height:200px;width:auto;display:block;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));transform-origin:bottom center;transition:left 0.8s ease,bottom 0.4s ease">
+  <!-- Hair spiky back -->
+  <ellipse cx="65" cy="50" rx="28" ry="30" fill="#7a2e08"/>
+  <!-- Spiky top -->
+  <path d="M50 38 L44 18 L54 32 L58 14 L64 30 L68 12 L72 30 L78 16 L82 34 L86 22 L80 40Z" fill="#7a2e08"/>
+  <!-- Scarf -->
+  <path d="M48 96 Q65 88 82 96 Q82 108 78 112 Q65 116 52 112 Q48 108 48 96Z" fill="#e8e0d0"/>
+  <path d="M48 96 Q55 102 52 112 Q44 115 40 110 Q36 100 48 96Z" fill="#e8e0d0"/>
+  <!-- Neck -->
+  <rect x="59" y="86" width="12" height="14" rx="3" fill="#f5c8a0"/>
+  <!-- Jacket -->
+  <rect x="40" y="98" width="50" height="44" rx="8" fill="#6a2e08"/>
+  <!-- Shirt under -->
+  <rect x="52" y="98" width="26" height="40" rx="4" fill="#e8e0d0"/>
+  <!-- Lapels -->
+  <path d="M40 98 L55 108 L52 140 L40 142Z" fill="#5a2600"/>
+  <path d="M90 98 L75 108 L78 140 L90 142Z" fill="#5a2600"/>
+  <!-- Buttons -->
+  <circle cx="65" cy="112" r="2" fill="#c8980a"/>
+  <circle cx="65" cy="122" r="2" fill="#c8980a"/>
+  <!-- Belt -->
+  <rect x="42" y="138" width="46" height="8" rx="3" fill="#3a1a00"/>
+  <rect x="58" y="138" width="14" height="8" rx="2" fill="#c8980a"/>
+  <!-- Jeans -->
+  <rect x="43" y="144" width="44" height="30" rx="5" fill="#3a5aaa"/>
+  <!-- Legs -->
+  <rect x="44" y="172" width="18" height="30" rx="4" fill="#3a5aaa"/>
+  <rect x="68" y="172" width="18" height="30" rx="4" fill="#3a5aaa"/>
+  <!-- Boots -->
+  <rect x="42" y="196" width="22" height="14" rx="5" fill="#4a2000"/>
+  <rect x="42" y="196" width="22" height="6" rx="3" fill="#c8980a"/>
+  <rect x="66" y="196" width="22" height="14" rx="5" fill="#4a2000"/>
+  <rect x="66" y="196" width="22" height="6" rx="3" fill="#c8980a"/>
+  <!-- Left arm waving -->
+  <path d="M40 110 Q18 98 15 80" stroke="#f5c8a0" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <circle cx="14" cy="76" r="9" fill="#f5c8a0"/>
+  <line x1="9" y1="68" x2="8" y2="62" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="13" y1="67" x2="12" y2="61" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="17" y1="67" x2="17" y2="61" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <line x1="20" y1="68" x2="21" y2="63" stroke="#e8b890" stroke-width="3" stroke-linecap="round"/>
+  <rect x="7" y="74" width="14" height="6" rx="3" fill="#4a2000"/>
+  <!-- Right arm -->
+  <path d="M90 110 Q105 120 103 134" stroke="#f5c8a0" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <circle cx="102" cy="137" r="8" fill="#f5c8a0"/>
+  <rect x="95" y="131" width="14" height="6" rx="3" fill="#4a2000"/>
+  <!-- Dagger -->
+  <rect x="100" y="137" width="3" height="16" rx="1" fill="#c0c0c0"/>
+  <rect x="97" y="137" width="9" height="4" rx="1" fill="#8a6020"/>
+  <!-- Face -->
+  <ellipse cx="65" cy="66" rx="25" ry="26" fill="#f5c8a0"/>
+  <!-- Hair front -->
+  <path d="M40 56 Q44 36 65 34 Q86 36 90 56 Q84 42 65 44 Q46 44 40 56Z" fill="#7a2e08"/>
+  <!-- Spiky strands -->
+  <path d="M52 44 Q50 34 55 38Z" fill="#7a2e08"/>
+  <path d="M65 42 Q64 30 68 36Z" fill="#7a2e08"/>
+  <!-- Eyes white -->
+  <ellipse cx="54" cy="64" rx="6" ry="6.5" fill="white"/>
+  <ellipse cx="76" cy="64" rx="6" ry="6.5" fill="white"/>
+  <!-- Iris -->
+  <ellipse cx="55" cy="65" rx="4" ry="4.5" fill="#3a7aee"/>
+  <ellipse cx="77" cy="65" rx="4" ry="4.5" fill="#3a7aee"/>
+  <!-- Pupil -->
+  <ellipse cx="56" cy="64" rx="2.5" ry="2.8" fill="#1a2a5a"/>
+  <ellipse cx="78" cy="64" rx="2.5" ry="2.8" fill="#1a2a5a"/>
+  <!-- Highlights -->
+  <circle cx="57" cy="63" r="1" fill="white"/>
+  <circle cx="79" cy="63" r="1" fill="white"/>
+  <!-- Eyebrows -->
+  <path d="M48 57 Q54 54 60 57" stroke="#5a2a08" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M70 57 Q76 54 82 57" stroke="#5a2a08" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Blush -->
+  <ellipse cx="47" cy="70" rx="5" ry="2.5" fill="#f0a0a0" opacity="0.35"/>
+  <ellipse cx="83" cy="70" rx="5" ry="2.5" fill="#f0a0a0" opacity="0.35"/>
+  <!-- Nose -->
+  <path d="M63 71 Q65 74 67 71" stroke="#e0a080" stroke-width="1.2" fill="none"/>
+  <!-- Smile -->
+  <path d="M57 78 Q65 84 73 78" stroke="#c07060" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Ears -->
+  <ellipse cx="40" cy="66" rx="5" ry="7" fill="#f5c8a0"/>
+  <ellipse cx="90" cy="66" rx="5" ry="7" fill="#f5c8a0"/>
+</svg>`
+};
+function selectChar(c){
+  G.char=c;
+  document.querySelectorAll('.char-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('card-'+c).classList.add('selected');
+  const wrap=document.getElementById('char-el');
+  if(wrap&&CHAR_SVGS[c])wrap.innerHTML=CHAR_SVGS[c];
+}
+function startGame(){
+  showScreen('loading');
+  G.step=0;G.score=0;G.correct=0;G.total=0;G.pitchBest=0;G.pitchAttempts=0;G.pitchHistory=[];
+  setTimeout(()=>{showScreen('game');renderStep();},1200);
+}
+
+// ══ RENDER ══
+function renderStep(){
+  const epCur=EPISODES_DATA[G.episode-1]||EPISODES_DATA[0];
+  if(G.step>=epCur.steps.length){endEpisode();return;}
+  const s=epCur.steps[G.step];
+  const name=G.char==='maya'?'Maya':'Alex';
+  document.getElementById('prog-fill').style.width=Math.round(G.step/epCur.steps.length*100)+'%';
+  const epNow=EPISODES_DATA[G.episode-1]||EPISODES_DATA[0];document.getElementById('ep-label').textContent='Эп.'+G.episode+' · '+epNow.titleRu;
+  document.getElementById('score-lbl').textContent=G.score+' pts';
+  document.getElementById('dlg-speaker').textContent=s.speaker;
+  document.getElementById('dlg-en').innerHTML=s.en.replace(/\{name\}/g,name).replace(/<w>(.*?)<\/w>/g,'<span class="word-tap" onclick="showTip(\'$1\',\'нажми чтобы узнать значение\')">$1</span>');
+  document.getElementById('dlg-ru').textContent=(s.ru||'').replace(/\{name\}/g,name);
+  setScene(s.scene,s.action);
+  document.getElementById('choices-area').innerHTML='';
+  document.getElementById('choices-area').style.display='flex';
+  document.getElementById('pitch-area').style.display='none';
+  document.getElementById('btn-next').className='btn-next';
+  if(s.type==='narration'){document.getElementById('btn-next').className='btn-next show';document.getElementById('btn-next').textContent='Продолжить →';}
+  else if(s.type==='choice'){renderChoices(s.options);}
+  else if(s.type==='voice'){document.getElementById('choices-area').style.display='none';initPitch(s);}
+}
+
+// ══ CHOICES ══
+function renderChoices(opts){
+  const area=document.getElementById('choices-area');
+  ['A','B','C'].forEach((L,i)=>{
+    const d=document.createElement('div');d.className='choice-item';
+    d.innerHTML=`<div class="choice-letter">${L}</div><div><div class="choice-text">${opts[i].text}</div><div class="choice-hint">${opts[i].hint}</div></div>`;
+    d.onclick=()=>pick(d,opts[i].correct,opts);area.appendChild(d);
+  });
+}
+function pick(el,correct,opts){
+  G.total++;
+  document.querySelectorAll('.choice-item').forEach(c=>{c.classList.add('disabled');c.onclick=null;});
+  if(correct){el.classList.add('correct');G.score+=10;G.correct++;document.getElementById('score-lbl').textContent=G.score+' pts';}
+  else{el.classList.add('wrong');document.querySelectorAll('.choice-item').forEach((c,i)=>{if(opts[i]&&opts[i].correct)c.classList.add('correct');});}
+  document.getElementById('btn-next').className='btn-next show';
+  document.getElementById('btn-next').textContent='Продолжить →';
+}
+
+// ══ PITCH TRAINER ══
+let REF=[];
+function initPitch(s){
+  REF=s.refPitch||[];G.pitchRaw=[];G.pitchHistory=[];G.pitchAttempts=0;
+  document.getElementById('pitch-phrase-en').textContent=s.voiceEn;
+  document.getElementById('pitch-phrase-ru').textContent=s.voiceRu;
+  document.getElementById('you-badge').textContent='ожидание...';
+  document.getElementById('match-fill').style.width='0%';
+  document.getElementById('match-text').textContent='Нажми на микрофон и повтори фразу';
+  document.getElementById('pitch-tip').className='pitch-tip';
+  document.getElementById('pitch-status').textContent='Нажми и говори';
+  document.getElementById('attempts-row').textContent='';
+  document.getElementById('mic-btn').className='mic-ring';
+  document.getElementById('mic-btn').textContent='🎤';
+  document.getElementById('pitch-area').style.display='flex';
+  const rc=document.getElementById('ref-canvas'),uc=document.getElementById('user-canvas');
+  setupC(rc);setupC(uc);
+  drawCurve(rc.getContext('2d'),rc,REF,'#c8a96e','rgba(200,169,110,0.12)');
+  drawEmpty(uc.getContext('2d'),uc);
+  document.getElementById('btn-next').className='btn-next show';
+  document.getElementById('btn-next').textContent='Пропустить →';
+}
+function setupC(c){const dpr=window.devicePixelRatio||1;c.width=c.offsetWidth*dpr||340*dpr;c.height=60*dpr;}
+function drawCurve(ctx,canvas,data,stroke,fill){
+  const W=canvas.width,H=canvas.height,dpr=window.devicePixelRatio||1;
+  if(!data||data.length<2){drawEmpty(ctx,canvas);return;}
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(0,H*i/4);ctx.lineTo(W,H*i/4);ctx.stroke();}
+  const step=W/(data.length-1);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,fill);g.addColorStop(1,'transparent');
+  ctx.beginPath();ctx.moveTo(0,H);
+  data.forEach((v,i)=>ctx.lineTo(i*step,H-(v*H*.82)-H*.06));
+  ctx.lineTo(W,H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle=stroke;ctx.lineWidth=2*dpr;ctx.lineJoin='round';
+  data.forEach((v,i)=>{const x=i*step,y=H-(v*H*.82)-H*.06;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // peaks
+  for(let i=1;i<data.length-1;i++){if(data[i]>data[i-1]&&data[i]>data[i+1]&&data[i]>.72){const x=i*step,y=H-(data[i]*H*.82)-H*.06;ctx.beginPath();ctx.arc(x,y,3*dpr,0,Math.PI*2);ctx.fillStyle=stroke;ctx.fill();}}
+}
+function drawEmpty(ctx,canvas){
+  const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(91,168,229,0.15)';ctx.setLineDash([4,6]);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,H*.62);ctx.lineTo(W,H*.62);ctx.stroke();ctx.setLineDash([]);
+}
+function sm5(arr){return arr.map((v,i,a)=>{let s=0,n=0;for(let j=Math.max(0,i-2);j<=Math.min(a.length-1,i+2);j++){s+=a[j];n++;}return s/n;});}
+function normTo(data,len){if(data.length===len)return data;return Array.from({length:len},(_,i)=>{const idx=(i/(len-1))*(data.length-1),lo=Math.floor(idx),hi=Math.ceil(idx),t=idx-lo;return(data[lo]||0)*(1-t)+(data[hi]||0)*t;});}
+function compareCurves(a,b){
+  const mA=a.reduce((s,v)=>s+v,0)/a.length,mB=b.reduce((s,v)=>s+v,0)/b.length;
+  const nA=a.map(v=>v-mA),nB=b.map(v=>v-mB);
+  const dot=nA.reduce((s,v,i)=>s+v*nB[i],0);
+  const magA=Math.sqrt(nA.reduce((s,v)=>s+v*v,0)),magB=Math.sqrt(nB.reduce((s,v)=>s+v*v,0));
+  if(!magA||!magB)return 0;return Math.max(0,Math.min(1,(dot/(magA*magB)+1)/2));
+}
+
+function toggleVoice(){G.isRec?stopVoice():startVoice();}
+async function startVoice(){
+  try{
+    G.stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    G.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    G.analyser=G.audioCtx.createAnalyser();G.analyser.fftSize=2048;G.analyser.smoothingTimeConstant=.82;
+    G.audioCtx.createMediaStreamSource(G.stream).connect(G.analyser);
+    G.isRec=true;G.pitchRaw=[];
+    document.getElementById('mic-btn').className='mic-ring rec';
+    document.getElementById('mic-btn').textContent='⏹';
+    document.getElementById('pitch-status').textContent='Слушаю... говори фразу';
+    document.getElementById('you-badge').textContent='запись...';
+    document.getElementById('match-fill').style.width='0%';
+    document.getElementById('match-text').textContent='';
+    document.getElementById('pitch-tip').className='pitch-tip';
+    voiceLoop();setTimeout(()=>{if(G.isRec)stopVoice();},5000);
+  }catch(e){simulateVoice();}
+}
+function voiceLoop(){
+  if(!G.isRec)return;
+  const buf=new Float32Array(G.analyser.fftSize);G.analyser.getFloatTimeDomainData(buf);
+  let rms=0;for(let i=0;i<buf.length;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/buf.length);
+  const p=getPitch(buf,G.audioCtx.sampleRate);
+  G.pitchRaw.push(p>0?Math.min(1,Math.max(0,(p-80)/400)):rms*2.5);
+  if(G.pitchRaw.length>4){const uc=document.getElementById('user-canvas');drawCurve(uc.getContext('2d'),uc,sm5(G.pitchRaw.slice(-54)),'#5ba8e5','rgba(91,168,229,0.12)');}
+  G.animFrame=requestAnimationFrame(voiceLoop);
+}
+function stopVoice(){
+  G.isRec=false;cancelAnimationFrame(G.animFrame);
+  if(G.stream)G.stream.getTracks().forEach(t=>t.stop());
+  if(G.audioCtx)G.audioCtx.close();
+  document.getElementById('mic-btn').className='mic-ring';
+  document.getElementById('mic-btn').textContent='🎤';
+  document.getElementById('you-badge').textContent='твой голос';
+  G.pitchAttempts++;analyzePitch();
+}
+function analyzePitch(){
+  const uc=document.getElementById('user-canvas');
+  if(G.pitchRaw.length<5){document.getElementById('match-text').textContent='Слишком тихо, говори громче';drawEmpty(uc.getContext('2d'),uc);return;}
+  const norm=normTo(sm5(G.pitchRaw),REF.length);
+  drawCurve(uc.getContext('2d'),uc,norm,'#5ba8e5','rgba(91,168,229,0.12)');
+  const score=compareCurves(norm,REF);
+  G.pitchHistory.push(score);
+  const best=Math.max(...G.pitchHistory);G.pitchBest=best;
+  const pct=Math.round(score*100);
+  document.getElementById('match-fill').style.width=pct+'%';
+  let maxDiff=0,maxIdx=0;
+  norm.forEach((v,i)=>{const d=Math.abs(v-REF[i]);if(d>maxDiff){maxDiff=d;maxIdx=i;}});
+  const pos=maxIdx/REF.length;
+  let msg='',tip='';
+  if(score>.82){msg='🎉 Отлично! Акцент почти идеальный!';tip='✓ Интонация очень близка к носителю!';G.score+=15;G.correct++;document.getElementById('score-lbl').textContent=G.score+' pts';document.getElementById('btn-next').textContent='Продолжить →';}
+  else if(score>.62){msg=`👍 Хорошо! ${pct}% совпадение`;tip=pos<.35?'↗ Начало — подними голос выше на "Yes, I\'m"':pos>.65?'↘ Конец — голос должен резко падать на "-zing"':'↔ Выдели слово "STARVING" сильнее, это ключевое слово';}
+  else if(score>.40){msg=`📈 Ещё попытка! ${pct}% совпадение`;tip='💡 Поднимай голос на главном слове (STARVING), потом резко вниз';}
+  else{msg='🎤 Говори громче и чётче';tip='🔊 Утрируй интонацию — очень высоко на "STARVING" и резко вниз';}
+  document.getElementById('match-text').textContent=msg;
+  document.getElementById('pitch-tip').textContent=tip;
+  document.getElementById('pitch-tip').className='pitch-tip show';
+  if(G.pitchAttempts>1)document.getElementById('attempts-row').textContent=`Попытка ${G.pitchAttempts} · Лучший: ${Math.round(best*100)}%`;
+  document.getElementById('pitch-status').textContent=score>.82?'Отличное произношение!':'Нажми ещё раз чтобы улучшить';
+}
+function getPitch(buf,sr){
+  let rms=0;for(let i=0;i<buf.length;i++)rms+=buf[i]*buf[i];if(Math.sqrt(rms/buf.length)<.008)return-1;
+  const len=buf.length,c=new Float32Array(len);
+  for(let i=0;i<len;i++)for(let j=0;j<len-i;j++)c[i]+=buf[j]*buf[j+i];
+  let d=0;while(c[d]>c[d+1])d++;
+  let maxVal=-1,maxPos=-1;for(let i=d;i<len;i++)if(c[i]>maxVal){maxVal=c[i];maxPos=i;}
+  return maxPos>0?sr/maxPos:-1;
+}
+function simulateVoice(){
+  document.getElementById('pitch-status').textContent='Демо (нет доступа к микрофону)';
+  const q=.55+Math.random()*.35;
+  const sim=REF.map(v=>Math.min(1,Math.max(0,v+(Math.random()-.5)*(1-q)*1.2)));
+  let i=0;
+  document.getElementById('mic-btn').className='mic-ring rec';
+  document.getElementById('you-badge').textContent='симуляция...';
+  const uc=document.getElementById('user-canvas');
+  const iv=setInterval(()=>{
+    drawCurve(uc.getContext('2d'),uc,sm5(sim.slice(0,i+2)),'#5ba8e5','rgba(91,168,229,0.12)');
+    i+=3;
+    if(i>=sim.length){clearInterval(iv);G.pitchRaw=sim;G.pitchAttempts++;document.getElementById('mic-btn').className='mic-ring';document.getElementById('mic-btn').textContent='🎤';document.getElementById('you-badge').textContent='твой голос';analyzePitch();}
+  },70);
+}
+
+// ══ SCENE ══
+function setScene(scene,action){
+  ['bedroom','kitchen'].forEach(s=>document.getElementById('bg-'+s).style.opacity=s===scene?'1':'0');
+  const iB=scene==='bedroom',iK=scene==='kitchen';
+  document.getElementById('moon-el').style.opacity=iB?'1':'0';
+  document.getElementById('sun-el').style.opacity=iK?'1':'0';
+  document.getElementById('stars-wrap').style.opacity=iB?'1':'0';
+  document.getElementById('bed-el').style.opacity=iB?'1':'0';
+  document.getElementById('window-el').className='window-el'+(iK?' day':'');
+  document.getElementById('counter-el').style.opacity=iK?'1':'0';
+  document.getElementById('toast-el').style.opacity=iK?'1':'0';
+  const ch=document.getElementById('char-el');
+  const zzz=document.getElementById('zzz-el');
+  const bl=document.getElementById('blanket-el');
+  if(action==='sleep'){zzz.style.opacity='1';bl.classList.remove('off');ch.style.bottom='50px';ch.style.left='30px';}
+  else if(action==='wakeup'){zzz.style.opacity='0';setTimeout(()=>bl.classList.add('off'),300);ch.style.bottom='60px';}
+  else if(action==='kitchen'){zzz.style.opacity='0';ch.style.left='40px';ch.style.bottom='62px';}
+  else{zzz.style.opacity='0';}
+}
+
+// ══ NAV ══
+function nextStep(){G.step++;renderStep();}
+function endEpisode(){
+  document.getElementById('res-score').textContent=G.score;
+  document.getElementById('res-correct').textContent=G.correct+'/'+G.total;
+  document.getElementById('res-pitch').textContent=G.pitchBest>0?Math.round(G.pitchBest*100)+'%':'—';
+  document.getElementById('res-sub').textContent=(G.char==='maya'?'Майя':'Алекс')+' готова к новому дню в Нью-Йорке!';
+  document.getElementById('ep-counter').textContent='Эпизод '+G.episode+' из 5 бесплатных (всего 10 в сезоне)';
+  showScreen('result');
+}
+function nextEpisode(){G.episode++;if(G.episode>5){showScreen('paywall');return;}G.step=0;G.score=0;G.correct=0;G.total=0;G.pitchBest=0;G.pitchAttempts=0;G.pitchHistory=[];showScreen('loading');setTimeout(()=>{showScreen('game');renderStep();},800);}
+function handlePayment(){if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.openInvoice('...');}else{alert('Открываем оплату через Kaspi...\nВ реальном боте — Telegram Stars или Kaspi Pay');}}
+function showTip(w,t){const d=document.createElement('div');d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2a2545;color:#f0ead8;padding:8px 16px;border-radius:10px;font-size:12px;z-index:999;border:1px solid #c8a96e55;white-space:nowrap;pointer-events:none';d.textContent=w+' — '+t;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
+
+// ══ STARS ══
+(()=>{const el=document.getElementById('stars-wrap');for(let i=0;i<28;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*65+'%';s.style.animationDelay=Math.random()*3+'s';s.style.opacity=Math.random()*.6+.2;el.appendChild(s);}})();
+
+if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.ready();window.Telegram.WebApp.expand();}
+</script>
+</body>
+</html>
